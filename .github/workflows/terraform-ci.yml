@@ -1,0 +1,50 @@
+name: Terraform CI
+
+# Static checks only: no AWS credentials, no backend state, no plan or apply.
+on:
+  push:
+    branches: [main, "feature/**"]
+    paths:
+      - "infra/terraform/**/*.tf"
+      - ".github/workflows/terraform-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/terraform/**/*.tf"
+      - ".github/workflows/terraform-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Format and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive infra/terraform
+
+      - name: Validate environments
+        run: |
+          shopt -s nullglob
+          found=0
+          for dir in infra/terraform/environments/*/; do
+            if compgen -G "${dir}*.tf" > /dev/null; then
+              found=1
+              echo "::group::terraform validate ${dir}"
+              terraform -chdir="$dir" init -backend=false -input=false
+              terraform -chdir="$dir" validate
+              echo "::endgroup::"
+            fi
+          done
+          [ "$found" -eq 1 ] || echo "No Terraform configuration found yet; skipping validate."

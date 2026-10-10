@@ -1,5 +1,31 @@
 # ai-soc-automation-aws
 
+## Repository layout
+
+```
+frontend/             React SOC console (Vite)
+backend/              FastAPI service (see backend/README.md)
+mock-services/        simulated SIEM, identity, asset and response APIs
+data/                 synthetic logs, alerts and threat indicators
+security-knowledge/   RAG corpus: incident response, playbooks, policies, threat intel
+tests/                cross-service unit, integration and evaluation tests
+infra/terraform/      AWS infrastructure (modules, environments/dev)
+scripts/, docs/
+```
+
+Copy `.env.example` to `.env` for local configuration. AWS credentials come from IAM roles or AWS SSO profiles, never from `.env` files.
+
+## Backend
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000   # http://localhost:8000/health
+python -m pytest
+```
+
 ## Frontend
 
 React + TypeScript + Vite SOC console (Tailwind CSS, shadcn/ui, Recharts, React Router). By default it runs entirely on deterministic synthetic data in the browser; every response action is simulated.
